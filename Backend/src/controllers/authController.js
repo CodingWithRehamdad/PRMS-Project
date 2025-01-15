@@ -1,50 +1,31 @@
 const bcrypt = require('bcrypt');
-const User = require('../models/user.models');
+const User = require('../models/userModels');
 const generateToken = require('../utils/generateToken');
 
 // Register User
 const registerUser = async (req, res) => {
-  console.log("Incoming Registration Data:", req.body); // Logs registration data
-
   const { fullName, gender, dateOfBirth, contactInformation, role, password } = req.body;
+  const validRoles = ["Admin", "Doctor", "Nurse", "Patient", "Receptionist"];
+
+  if (!validRoles.includes(role)) {
+    return res.status(400).json({ message: 'Invalid role. Please select a valid role.' });
+  }
 
   try {
-    const validRoles = ["Admin", "Doctor", "Nurse", "Patient", "Receptionist"];
-    if (!validRoles.includes(role)) {
-      console.error("Invalid Role:", role); // Logs invalid role
-      return res.status(400).send({ message: 'Invalid role. Please select a valid role.' });
+    if (await User.findOne({ 'contactInformation.email': contactInformation.email })) {
+      return res.status(400).json({ message: 'User already exists' });
     }
 
-    const userExists = await User.findOne({ 'contactInformation.email': contactInformation.email });
-    if (userExists) {
-      console.error("User Already Exists:", contactInformation.email); // Logs duplicate user
-      return res.status(400).send({ message: 'User already exists' });
-    }
+    const newUser = new User(req.body); // Initialize a new user with req.body
+    await newUser.save();
 
-    const user = await User.create({
-      userName: fullName,
-      gender,
-      dateOfBirth,
-      contactInformation,
-      role,
-      password
-    });
+    res.status(201).json({
+      user: newUser,
+      token: generateToken(newUser._id)
+    })
 
-    if (user) {
-      console.log("User Created Successfully:", user); // Logs user creation success
-      res.status(201).json({
-        _id: user._id,
-        fullName: user.userName,
-        role: user.role,
-        token: generateToken(user._id)
-      });
-    } else {
-      console.error("Invalid User Data"); // Logs invalid user data
-      res.status(400).send({ message: 'Invalid user data' });
-    }
   } catch (error) {
-    console.error("Error Registering User:", error.message); // Logs errors during user registration
-    res.status(500).send({ error: 'Internal server error' });
+    res.status(500).send({ error: 'Internal server error', details: error.message });
   }
 };
 
@@ -55,23 +36,17 @@ const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ 'contactInformation.email': email });
-    if (user && (await bcrypt.compare(password, user.password))) {
-      console.log("User Logged In Successfully:", user); // Logs successful login
-      res.json({
-        _id: user._id,
-        name: user.userName,
-        email: user.contactInformation.email,
-        token: generateToken(user._id)
-      });
-    } else {
-      console.error("Invalid Email or Password"); // Logs invalid login attempt
-      res.status(404).send({ message: 'Invalid email or password' });
-    }
-  } catch (error) {
-    console.error("Error Logging In User:", error.message); // Logs errors during login
-    res.status(500).send({ message: 'Internal Server Error' });
-  }
+    const user = await User.findOne({ username });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
+
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    res.json({ token });
+} catch (err) {
+    res.status(500).json({ error: err.message });
+}
 };
 
 // Get Profile

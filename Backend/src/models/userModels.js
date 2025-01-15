@@ -53,6 +53,14 @@ const userSchema = new mongoose.Schema({
 }, {timestamps: true})
 
 
+// Modify toJSON to exclude sensitive fields like password
+userSchema.methods.toJSON = function () {
+    const user = this.toObject();
+    delete user.password; // Exclude sensitive data
+    delete user.__v;      // Exclude version key
+    return user;
+  };
+
 // ----- Hash Password before saving in DB-------------
 
 userSchema.pre('save', async function (next) {
@@ -62,10 +70,6 @@ userSchema.pre('save', async function (next) {
     next()
 })
 
-// Method to compare password during login
-userSchema.methods.matchPassword = async function (enteredPassword) {
-    return await bcrypt.compare(enteredPassword, this.password);  // Compare the entered password with the hashed password
-  };
 
 const User = mongoose.model('User', userSchema)
 
