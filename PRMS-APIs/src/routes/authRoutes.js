@@ -1,6 +1,15 @@
 const express = require("express");
-const { registerUser, loginUser, getProfile } = require("../controllers/authController");
-const { protect, roleMiddleware } = require("../middlewares/authmiddleware");
+const {
+  registerUser,
+  loginUser,
+  getProfile,
+  logout,
+  updateUser,
+  deleteUser,
+  getUser,
+  getAllUsers
+} = require("../controllers/authController");
+const { protect, roleMiddleware } = require("../middlewares/authMiddleware");
 const { registerValidator, loginValidator } = require("../validators/authValidator");
 const { validationResult } = require("express-validator");
 
@@ -19,11 +28,16 @@ const handleValidation = (req, res, next) => {
 // Public routes
 router.post("/register", registerValidator, handleValidation, registerUser);
 router.post("/login", loginValidator, handleValidation, loginUser);
+router.post('/logout', protect, logout)
+router.patch('/update', protect, updateUser)
+router.delete('/delete', deleteUser)
+router.get('/user', getUser)
+router.get('/users', getAllUsers)
 
 // Protected routes
 router.get("/profile", protect, getProfile);
 
-// Role-based example routes
+// Role-based routes
 router.get("/admin", protect, roleMiddleware("Admin"), (req, res) => {
   res.send("Welcome, Admin!");
 });
