@@ -12,6 +12,7 @@ const {
 const { protect, roleMiddleware } = require("../middlewares/authMiddleware");
 const { registerValidator, loginValidator } = require("../validators/authValidator");
 const { validationResult } = require("express-validator");
+const { getAllPatients, getPatientById } = require('../controllers/patientController')
 
 const router = express.Router();
 
@@ -29,13 +30,15 @@ const handleValidation = (req, res, next) => {
 router.post("/register", registerValidator, handleValidation, registerUser);
 router.post("/login", loginValidator, handleValidation, loginUser);
 router.post('/logout', protect, logout)
-router.patch('/update', protect, updateUser)
-router.delete('/delete', deleteUser)
-router.get('/user', getUser)
-router.get('/users', getAllUsers)
+router.patch('/update/:id', protect, updateUser)
+router.delete('/delete/:id', deleteUser)
+
 
 // Protected routes
 router.get("/profile", protect, getProfile);
+router.get('/user/:id', getUser)
+router.get('/users', getAllUsers)
+
 
 // Role-based routes
 router.get("/admin", protect, roleMiddleware("Admin"), (req, res) => {
