@@ -1,12 +1,14 @@
 const Patient = require('../models/patientModel')
 
 // getAllPatients
+
+
 const getAllPatients = async (req, res) => {
     try {
         const patients = await Patient.find().populate('userId', 'fullName contactInformation')
         return res.status(200).json(patients)
     } catch (error) {
-        res.status(500).json({error: err.message})
+        res.status(500).json({error: error.message})
     }
 };
 
@@ -19,7 +21,7 @@ const getPatientById = async (req, res) => {
         }
         res.status(200).json(patient)
     } catch (error) {
-        res.status(500).json({error: err.message})
+        res.status(500).json({error: error.message})
     }
 }
 
@@ -27,3 +29,4 @@ module.exports = {
     getAllPatients,
     getPatientById
 }
+

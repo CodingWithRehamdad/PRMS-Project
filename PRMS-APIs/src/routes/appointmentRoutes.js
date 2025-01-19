@@ -1,4 +1,4 @@
-const express = require(express)
+const express = require('express')
 const {
     createAppointment,
     getAppointments,
@@ -12,9 +12,9 @@ const {
 
 const router = express.Router();
 
-router.post('./newappointment', protect, roleMiddleware('Admin', 'Patient', 'Receptionist'), createAppointment)
-router.get('/appointments', protect, roleMiddleware('Admin', 'Patient', 'Receptionist'), getAppointments)
-router.update('/updateappointment/:id', protect, roleMiddleware('Admin', 'Patient', 'Receptionist'), updateAppointment)
-router.delete('/deleteappointment/:id', protect, roleMiddleware('Admin', 'Patient', 'Receptionist'), deleteAppointment)
+router.post('/new-appointment', protect, roleMiddleware('admin', 'patient', 'receptionist'), createAppointment)
+router.get('/appointments', protect, roleMiddleware('admin', 'patient', 'receptionist'), getAppointments)
+router.patch('/update-appointment/:id', protect, roleMiddleware('admin', 'patient', 'receptionist'), updateAppointment)
+router.delete('/delete-appointment/:id', protect, roleMiddleware('admin', 'patient', 'receptionist'), deleteAppointment)
 
 module.exports = router

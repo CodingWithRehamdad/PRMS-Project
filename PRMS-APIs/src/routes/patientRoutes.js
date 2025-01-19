@@ -4,7 +4,7 @@ const { protect, roleMiddleware } = require('../middlewares/authMiddleware')
 
 const router = express.Router();
 
-router.get('/patients', protect, roleMiddleware('Admin', 'Doctor', 'Nurse'), getAllPatients)
-router.get('/patient/:id', protect, roleMiddleware('Admin', 'Doctor', 'Nurse'), getPatientById)
+router.get('/patients', getAllPatients)
+router.get('/patient/:id', protect, roleMiddleware('admin', 'doctor', 'nurse'), getPatientById)
 
 module.exports = router

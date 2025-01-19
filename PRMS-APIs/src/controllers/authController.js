@@ -4,37 +4,37 @@ const generateToken = require('../utils/generateToken');
 
 // Register User
 const registerUser = async (req, res) => {
-  const { fullName, gender, dateOfBirth, contactInformation, role, password } = req.body;
-  const validRoles = ["Admin", "Doctor", "Nurse", "Patient", "Receptionist"];
-
-  if (!validRoles.includes(role)) {
-    return res.status(400).json({ message: 'Invalid role. Please select a valid role.' });
-  }
-
   try {
-    if (await User.findOne({ 'contactInformation.email': contactInformation.email })) {
-      return res.status(400).json({ message: 'User already exists' });
+    const { fullName, gender, dateOfBirth, contactInformation, role, password } = req.body;
+
+    const validRoles = ["admin", "doctor", "nurse", "patient", "receptionist"];
+    if (!validRoles.includes(role.toLowerCase())) {
+      return res.status(400).json({ message: 'Invalid role. Please select a valid role.' });
     }
 
-    const newUser = new User(req.body); // Initialize a new user with req.body
+    const userExists = await User.findOne({ 'contactInformation.email': contactInformation.email });
+    if (userExists) {
+      return res.status(400).json({ message: 'User already exists.' });
+    }
+    const newUser = new User({ ...req.body, role: role.toLowerCase() });
     await newUser.save();
 
     res.status(201).json({
       user: newUser,
-      token: generateToken(newUser._id)
-    })
-
+      token: generateToken(newUser._id),
+    });
   } catch (error) {
-    res.status(500).send({ error: 'Internal server error', details: error.message });
+    res.status(500).json({ message: 'Error registering user.', details: error.message });
   }
 };
+
 
 // Login User
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ 'contactInformation.email': email });
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -43,9 +43,10 @@ const loginUser = async (req, res) => {
     const token = generateToken(user._id, user.role);
     res.status(200).json({
       message: 'Logged In Successfully',
-      token,
-    })
+      token
+    });
   } catch (err) {
+    console.error("Error Logging In:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -57,69 +58,79 @@ const logout = async (req, res) => {
 
 // Get Profile
 const getProfile = async (req, res) => {
-  console.log("Fetching User Profile:", req.user); // Logs user profile data
-  res.json(req.user);
+  try {
+    console.log("Fetching User Profile:", req.user);
+    res.json(req.user);
+  } catch (error) {
+    console.error("Error Fetching Profile:", error);
+    res.status(500).json({ message: 'Error fetching profile', details: error.message });
+  }
 };
 
 // Update User By Role and Id
 const updateUser = async (req, res) => {
   try {
-    const { role, id } = req.params
+    const { id } = req.params;
+    const {role} = req.query;
 
-    const user = await User.findOneAndUpdate({ _id: id, role }, req.body, { new: true })
+    const user = await User.findOneAndUpdate({ _id: id, role: role.toLowerCase }, req.body, { new: true });
     if (!user) {
-      return res.status(404).json({ message: `${role} is not found` })
+      return res.status(404).json({ message: `${role} not found` });
     }
-    res.status(201).json({ message: `${role} updated successfully` })
+    res.status(200).json({ message: `${role} updated successfully`, user });
   } catch (error) {
-    res.status(500).json({ error: err.message })
+    console.error("Error Updating User:", error);
+    res.status(500).json({ message: 'Error updating user', details: error.message });
   }
 };
 
 // Delete User by Role and Id
 const deleteUser = async (req, res) => {
   try {
-    const {role, id} = req.params;
-    const user = await User.findByIdAndDelete({_id: id, role})
+    const { id } = req.params;
+    const { role } = req.query;
+    const user = await User.findOneAndDelete({ _id: id, role });
     if (!user) {
-      return res.status(404).json({message: `${role} not found`})
+      return res.status(404).json({ message: `${role} not found` });
     }
-    res.status(200).json({message: `${role} deleted successfully`})
+    res.status(200).json({ message: `${role} deleted successfully` });
   } catch (error) {
-    res.status(500).json({error: err.message})
+    console.error("Error Deleting User:", error);
+    res.status(500).json({ message: 'Error deleting user', details: error.message });
   }
 };
 
-// Get User for Role and ID 
+// Get User for Role and ID
 const getUser = async (req, res) => {
   try {
-    const {id} = req.params
-    const user = await User.findOne({_id: id, role})
-    if(!user) {
-      return res.status(404).json({message: 'User not found'})
-    } 
-    res.status(200).json({user})
-  } catch (error) {
-    res.status(500).json({error: err.message})
-  }
-}
-
-// Get All Users by role
-const getAllUsers = async (req, res) => {
-  try {
-    const { role } = req.params
-    const validRoles = ['Doctor', 'Nurse', 'Patient', 'Admin', 'Receptionist']
-    if (!validRoles.includes(role)) {
-      return res.status(404).json({message: 'Invalid role'})
+    const { id } = req.params;
+    const { role } = req.query;
+    const user = await User.findOne({ _id: id, role });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
-    const users = await User.find({role})
-    res.status(200).json(users)
+    res.status(200).json(user);
   } catch (error) {
-    res.status(500).json({error: err.message})
+    console.error("Error Fetching User:", error);
+    res.status(500).json({ message: 'Error fetching user', details: error.message });
   }
 };
 
-
+// Get All Users by Role
+const getAllUsers = async (req, res) => {
+  try {
+    const { role } = req.params;
+    const validRoles = ['admin', 'doctor', 'patient', 'nurse', 'receptionist'];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ message: 'Invalid role' });
+    }
+    const users = await User.find({ role });
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("Error Fetching Users:", error);
+    res.status(500).json({ message: 'Error fetching users', details: error.message });
+  }
+};
 
 module.exports = {
   registerUser,
