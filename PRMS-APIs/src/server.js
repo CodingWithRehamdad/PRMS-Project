@@ -13,7 +13,7 @@ connectDB();
 const app = express();
 app.use(express.json()); 
 
-// Use the authentication routes
+//authentication routes
 app.use("/api/auth", authRoutes);
 app.use("/api/", patientRoutes)
 app.use("/api/", appointmentRoutes)

@@ -28,7 +28,7 @@ const userSchema = new mongoose.Schema({
         specialization: {type: String},
         qualifications: {type: String},
         yearsOfExperience: {type: String},
-        hosptialDepartment: {type: String},
+        hospitalDepartment: {type: String},
         workSchedule: {type: String}
     },
     nurseDetails: {
@@ -36,7 +36,6 @@ const userSchema = new mongoose.Schema({
         specialization: {type: String},
         yearsOfExperience: {type: String},
         qualifications: {type: String},
-        yearsOfExperience: {type: String},
         assginedDoctor: [{type: mongoose.Schema.Types.ObjectId, ref: "doctor"}],
         workSchedule: {type: String}
     },
